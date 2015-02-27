@@ -26,6 +26,9 @@ use File::Temp;
 use File::Path;
 use POSIX;
 
+use Net::SSL ();
+$Net::HTTPS::SSL_SOCKET_CLASS = "Net::SSL"; # Force use of Net::SSL
+
 my %Config;
 my @config_files = ("./jvpn.ini", $ENV{'HOME'}."/.jvpn.ini", "/etc/jvpn/jvpn.ini");
 my $config_file = '';
@@ -56,6 +59,7 @@ my $script=$Config{"script"};
 my $cfgpass=$Config{"password"};
 my $workdir=$Config{"workdir"};
 my $password="";
+my $password2="";
 my $hostchecker=$Config{"hostchecker"};
 my $tncc_pid = 0;
 
@@ -139,14 +143,21 @@ if (!defined($username) || $username eq "" || $username eq "interactive") {
 }
 
 if ($cfgpass eq "interactive") {
-	print "Enter PIN+password: ";
+	print "Enter Password: ";
 	$password=read_input("password");
+	print "\n";
+	print "Enter Token: ";
+        $password2=read_input("password");
 	print "\n";
 }
 elsif ($cfgpass =~ /^plaintext:(.+)/) {
 	print "Using user-defined password\n";
 	$password=$1;
 	chomp($password);
+	print "\n";
+        print "Enter Token: ";
+        $password2=read_input("password");
+        print "\n";
 }
 elsif ($cfgpass =~ /^helper:(.+)/) {
 	print "Using user-defined script to get the password\n";
@@ -156,10 +167,11 @@ elsif ($cfgpass =~ /^helper:(.+)/) {
 my $response_body = '';
 
 my $res = $ua->post("https://$dhost:$dport/dana-na/auth/$durl/login.cgi",
-	[ btnSubmit   => 'Sign In',
+	[ btnSubmit   => 'Play',
 	password  => $password,
+	"password#2" => $password2,
 	realm => $realm,
-	tz   => '60',
+	tz_offset   => '-240',
 	username  => $username,
 	]);
 
